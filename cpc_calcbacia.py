@@ -18,9 +18,6 @@ import argparse
 from matplotlib.colors import BoundaryNorm, LinearSegmentedColormap
 
 CONFIG_FILE = "cpc.config"
-SHAPEFILE_DIR = "/mnt/e/OneDrive/OPERACIONAL/SHAPES/SAE/OPERACIONAL/"
-SHAPEFILE_PADRAO = "SAE*.shp"
-MAPA_DIR = "./MAPAS_CPC"
 
 def ler_configuracao(regiao="AMS", arquivo_config="cpc.config"):
     """
@@ -28,29 +25,50 @@ def ler_configuracao(regiao="AMS", arquivo_config="cpc.config"):
     - caminho do repositório dos NetCDFs
     - prefixo dos arquivos
     - escala de cores definida para os mapas
+    - diretório dos shapefiles
+    - padrão dos shapefiles
+    - diretório de saída dos mapas
     """
     config = configparser.ConfigParser()
     config.read(arquivo_config)
+
     escala_raw = config[regiao].get("escala_cores") or config["DEFAULT"].get("escala_cores")
     if escala_raw is None:
         raise ValueError("[ERRO] escala_cores ausente em cpc.config")
     escala_cores = list(map(float, escala_raw.strip().split()))
+
     caminho = config["DEFAULT"].get("repositorio")
     prefixo = config["DEFAULT"].get("prefixo")
-    return caminho, prefixo, escala_cores
+    shapefile_dir = config["DEFAULT"].get("shapefile_dir")
+    shapefile_padrao = config["DEFAULT"].get("shapefile_padrao")
+    mapa_dir = config["DEFAULT"].get("mapa_dir")
+
+    return caminho, prefixo, escala_cores, shapefile_dir, shapefile_padrao, mapa_dir
 
 def get_colormap():
     """
-    Retorna um colormap customizado similar ao estilo IMERG.
+    Retorna um colormap customizado baseado no estilo IMERG.
+    As cores representam diferentes intensidades de precipitação.
     """
     cores = ["#FFFFFF", "#EE82EE", "#0000FF", "#00FF00", "#FFFF00", "#FFA500", "#FF0000"]
     return plt.matplotlib.colors.LinearSegmentedColormap.from_list("ChuvaCPC", cores, N=256)
 
-def gerar_mapa_diario(chuva, lon, lat, shapefile_path, data_str, escala_cores):
+def gerar_mapa_diario(chuva, lon, lat, shapefile_path, data_str, escala_cores, mapa_dir):
     """
-    Gera e salva um mapa PNG da chuva diária com contorno das bacias e preenchimento por interpolação.
+    Gera e salva um mapa PNG da chuva diária:
+    - Preenchimento com contorno (contourf)
+    - Contorno dos shapefiles
+    - Uso de escala de cores definida pelo usuário
+
+    Parâmetros:
+    - chuva: array 2D com valores de precipitação
+    - lon, lat: vetores de longitude e latitude
+    - shapefile_path: caminho para o arquivo shapefile
+    - data_str: string da data para o título/nome do arquivo
+    - escala_cores: lista de limites de classe de precipitação
+    - mapa_dir: diretório onde o mapa será salvo
     """
-    os.makedirs(MAPA_DIR, exist_ok=True)
+    os.makedirs(mapa_dir, exist_ok=True)
     gdf = gpd.read_file(shapefile_path)
     if gdf.crs is None:
         gdf = gdf.set_crs("EPSG:4326")
@@ -74,17 +92,26 @@ def gerar_mapa_diario(chuva, lon, lat, shapefile_path, data_str, escala_cores):
     ax.set_title(f"Chuva Diária CPC - {data_str}\n{os.path.basename(shapefile_path)}", fontsize=10)
     plt.colorbar(p, ax=ax, orientation='vertical', pad=0.05, label='mm')
 
-    nome_img = f"{MAPA_DIR}/chuva_CPC_{data_str}_{os.path.splitext(os.path.basename(shapefile_path))[0]}.png"
+    nome_img = f"{mapa_dir}/chuva_CPC_{data_str}_{os.path.splitext(os.path.basename(shapefile_path))[0]}.png"
     plt.savefig(nome_img, dpi=150, bbox_inches='tight')
     plt.close()
     print(f"[MAPA] Diário salvo: {nome_img}")
 
-def gerar_mapa_classificacao(chuva, lon, lat, shapefile_path, data_str, escala_cores):
+def gerar_mapa_classificacao(chuva, lon, lat, shapefile_path, data_str, escala_cores, mapa_dir):
     """
-    Gera um mapa de classificação de pontos de chuva para cada shapefile:
-    - Pontos coloridos por classe de intensidade
-    - Pontos fora do polígono (azul) e NaN (vermelho)
-    - Título com data e nome do shapefile
+    Gera um mapa classificando pontos de grade conforme faixas de chuva:
+    - Cores diferentes por classe de intensidade
+    - Azul para pontos fora do polígono
+    - Vermelho para pontos com NaN
+    - Inclui contorno do shapefile e legenda
+
+    Parâmetros:
+    - chuva: array 2D com valores de precipitação
+    - lon, lat: vetores de longitude e latitude
+    - shapefile_path: caminho para o shapefile da bacia
+    - data_str: string da data usada no título/nome
+    - escala_cores: lista de classes para mapas (opcional, pode ser ignorada aqui)
+    - mapa_dir: diretório de saída dos mapas
     """
     gdf = gpd.read_file(shapefile_path)
     if gdf.crs is None:
@@ -134,8 +161,8 @@ def gerar_mapa_classificacao(chuva, lon, lat, shapefile_path, data_str, escala_c
     plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.12), ncol=3, fontsize=8)
     plt.tight_layout()
 
-    os.makedirs(MAPA_DIR, exist_ok=True)
-    nome_saida = f"{MAPA_DIR}/classif_CPC_{data_str}_{os.path.splitext(os.path.basename(shapefile_path))[0]}.png"
+    os.makedirs(mapa_dir, exist_ok=True)
+    nome_saida = f"{mapa_dir}/classif_CPC_{data_str}_{os.path.splitext(os.path.basename(shapefile_path))[0]}.png"
     plt.savefig(nome_saida, dpi=150, bbox_inches='tight')
     plt.close()
     print(f"[MAPA] Classificado salvo: {nome_saida}")
@@ -186,7 +213,7 @@ def processar_chuva_cpc(data_ini, data_fim, regiao="AMS", saida="chuva_diaria_CP
     - Salva planilha com abas "chuva_media" e "chuva_detalhes"
     - (opcional) Gera mapas de classificação por ponto
     """
-    repo, prefixo, escala = ler_configuracao(regiao, CONFIG_FILE)
+    repo, prefixo, escala, shapefile_dir, shapefile_padrao, mapa_dir = ler_configuracao(regiao, CONFIG_FILE)
     datas = pd.date_range(start=data_ini, end=data_fim)
     media_geral, detalhes = [], []
 
@@ -205,7 +232,7 @@ def processar_chuva_cpc(data_ini, data_fim, regiao="AMS", saida="chuva_diaria_CP
         ds.close()
         chuva = chuva.squeeze()
 
-        shapefiles = sorted(glob(os.path.join(SHAPEFILE_DIR, SHAPEFILE_PADRAO)))
+        shapefiles = sorted(glob(os.path.join(shapefile_dir, shapefile_padrao)))
         for shp in shapefiles:
             estats = calcular_estatisticas_bacia(chuva, lon, lat, shp)
             for linha in estats:
@@ -214,33 +241,24 @@ def processar_chuva_cpc(data_ini, data_fim, regiao="AMS", saida="chuva_diaria_CP
                 detalhes.append([nome_shp, linha[1], linha[2], dia.strftime('%Y-%m-%d')] + linha[3:])
 
             if classificacao:
-                gerar_mapa_classificacao(chuva, lon, lat, shp, dia.strftime('%Y-%m-%d'), escala)
+                gerar_mapa_classificacao(chuva, lon, lat, shp, dia.strftime('%Y-%m-%d'), escala, mapa_dir)
             else:
-                gerar_mapa_diario(chuva, lon, lat, shp, dia.strftime('%Y-%m-%d'), escala)
+                gerar_mapa_diario(chuva, lon, lat, shp, dia.strftime('%Y-%m-%d'), escala, mapa_dir)
 
-    # Cria DataFrame com todas as estatísticas médias
     df = pd.DataFrame(media_geral, columns=["bacia", "id", "nome", "data", "chuva_mm_media"])
     df['data'] = pd.to_datetime(df['data'])
     df['ANO'] = df['data'].dt.year
     df['MES'] = df['data'].dt.month
     df['DIA'] = df['data'].dt.day
 
-    # Cria tabela pivô com médias
     df_pivot = df.pivot_table(index=['ANO', 'MES', 'DIA'], columns='bacia', values='chuva_mm_media')
-
-    # Identifica todas as bacias existentes
     todas_bacias = sorted(set([linha[0] for linha in detalhes]))
-
-    # Adiciona colunas faltantes com 0.0
     for bacia in todas_bacias:
         if bacia not in df_pivot.columns:
             df_pivot[bacia] = 0.0
-
-    # Reordena colunas
     df_pivot = df_pivot.reset_index()
     colunas_finais = ['ANO', 'MES', 'DIA'] + todas_bacias
     df_pivot = df_pivot[colunas_finais]
-
 
     df_detalhes = pd.DataFrame(detalhes, columns=[
         "bacia", "id", "nome", "data", "chuva_mm_soma",
@@ -251,12 +269,7 @@ def processar_chuva_cpc(data_ini, data_fim, regiao="AMS", saida="chuva_diaria_CP
         df_pivot.to_excel(writer, index=False, sheet_name="chuva_media")
         df_detalhes.to_excel(writer, index=False, sheet_name="chuva_detalhes")
 
-    print(f"\n✅ Planilha salva como {saida} com abas 'chuva_media' e 'chuva_detalhes'")
-
-
-
-
-
+    print(f"✅ Planilha salva como {saida} com abas 'chuva_media' e 'chuva_detalhes'")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Processa arquivos CPC por bacia e gera mapas.")
