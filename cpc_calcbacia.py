@@ -206,7 +206,7 @@ def calcular_estatisticas_bacia(chuva, lon, lat, shapefile_path):
             continue
     return resultados
 
-def processar_chuva_cpc(data_ini, data_fim, regiao="AMS", saida="chuva_diaria_CPC.xlsx", classificacao=False):
+def processar_chuva_cpc(data_ini, data_fim, regiao="AMS", saida=None, classificacao=False):
     """
     Processa os arquivos CPC em um intervalo de datas:
     - Calcula estatísticas por shapefile
@@ -214,6 +214,10 @@ def processar_chuva_cpc(data_ini, data_fim, regiao="AMS", saida="chuva_diaria_CP
     - (opcional) Gera mapas de classificação por ponto
     """
     repo, prefixo, escala, shapefile_dir, shapefile_padrao, mapa_dir = ler_configuracao(regiao, CONFIG_FILE)
+    config = configparser.ConfigParser()
+    config.read(CONFIG_FILE)
+    if saida is None:
+        saida = config["DEFAULT"].get("saida_excel", "chuva_diaria_CPC.xlsx")
     datas = pd.date_range(start=data_ini, end=data_fim)
     media_geral, detalhes = [], []
 
@@ -269,7 +273,8 @@ def processar_chuva_cpc(data_ini, data_fim, regiao="AMS", saida="chuva_diaria_CP
         df_pivot.to_excel(writer, index=False, sheet_name="chuva_media")
         df_detalhes.to_excel(writer, index=False, sheet_name="chuva_detalhes")
 
-    print(f"✅ Planilha salva como {saida} com abas 'chuva_media' e 'chuva_detalhes'")
+    print(f"
+✅ Planilha salva como {saida} com abas 'chuva_media' e 'chuva_detalhes'")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Processa arquivos CPC por bacia e gera mapas.")
