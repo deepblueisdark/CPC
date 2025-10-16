@@ -158,7 +158,6 @@ if __name__ == "__main__":
                         help="Escala de cores ou chave do cpc.config (ex: --cores 0 10 20 ou --cores escala_verao)")
     parser.add_argument("--figura", default="", help="Prefixo para nome dos arquivos gerados")
     parser.add_argument("--titulo", default="", help="Título exibido na figura antes do intervalo de datas")
-    # >>> NOVO: escolher o colormap (padrão turbo)
     parser.add_argument("--colormap", default="turbo", help="Nome do colormap do Matplotlib (padrão: turbo)")
     parser.add_argument("--politica", nargs="+", default=["black", "0.5", "0.3"],
                         help="Desenha fronteiras políticas. Use 'off' para desligar ou 'cor largura_borda largura_estado' (ex: --politica black 0.5 0.3)")
@@ -201,11 +200,11 @@ if __name__ == "__main__":
         lat_i, lon_i, soma_i = interpolar_grade(lat, lon, chuva_soma, resolucao=args.resolucao)
         lat_j, lon_j, media_j = interpolar_grade(lat, lon, chuva_media, resolucao=args.resolucao)
         gerar_mapa(soma_i, lat_i, lon_i, f"{args.titulo} {data_ini:%Y-%m-%d} a {data_fim:%Y-%m-%d}",
-                   cores, nome_soma, limites, shapefile=args.shapefile, colormap=args.colormap)
+                   cores, nome_soma, limites, shapefile=args.shapefile, colormap=args.colormap,politica=args.politica)
         gerar_mapa(media_j, lat_j, lon_j, f"{args.titulo} {data_ini:%Y-%m-%d} a {data_fim:%Y-%m-%d} (média)",
-                   cores, nome_media, limites, shapefile=args.shapefile, colormap=args.colormap)
+                   cores, nome_media, limites, shapefile=args.shapefile, colormap=args.colormap,politica=args.politica)
     else:
         gerar_mapa(chuva_soma, lat, lon, f"{args.titulo} {data_ini:%Y-%m-%d} a {data_fim:%Y-%m-%d}",
-                   cores, nome_soma, limites, shapefile=args.shapefile, colormap=args.colormap)
+                   cores, nome_soma, limites, shapefile=args.shapefile, colormap=args.colormap,politica=args.politica)
         gerar_mapa(chuva_media, lat, lon, f"{args.titulo} {data_ini:%Y-%m-%d} a {data_fim:%Y-%m-%d} (média)",
-                   cores, nome_media, limites, shapefile=args.shapefile, colormap=args.colormap)
+                   cores, nome_media, limites, shapefile=args.shapefile, colormap=args.colormap,politica=args.politica)
