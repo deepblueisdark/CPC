@@ -94,7 +94,8 @@ def interpolar_grade(lat, lon, campo, resolucao=0.1):
     campo_interp = griddata(pontos, valores, (lon_i, lat_i), method="linear")
     return lat_interp, lon_interp, campo_interp
 
-def gerar_mapa(chuva, lat, lon, titulo, cores, saida_png, limites, shapefile=None, colormap="turbo"):
+def gerar_mapa(chuva, lat, lon, titulo, cores, saida_png, limites,
+               shapefile=None, colormap="turbo", politica=["black", "0.5", "0.3"]):
     min_lat, max_lat, min_lon, max_lon = limites
     plt.figure(figsize=(10, 6))
     proj = ccrs.PlateCarree()
@@ -102,14 +103,25 @@ def gerar_mapa(chuva, lat, lon, titulo, cores, saida_png, limites, shapefile=Non
     ax.set_extent([min_lon, max_lon, min_lat, max_lat], crs=proj)
 
     ax.coastlines()
-    ax.add_feature(cfeature.BORDERS, linewidth=0.5)
-    ax.add_feature(cfeature.STATES, linewidth=0.3)
+
+    # ---- NOVO BLOCO: controle das fronteiras políticas ----
+    if not (len(politica) == 1 and politica[0].lower() == "off"):
+        try:
+            cor = politica[0]
+            lw_borda = float(politica[1]) if len(politica) > 1 else 0.5
+            lw_estado = float(politica[2]) if len(politica) > 2 else 0.3
+            ax.add_feature(cfeature.BORDERS, edgecolor=cor, linewidth=lw_borda)
+            ax.add_feature(cfeature.STATES, edgecolor=cor, linewidth=lw_estado)
+        except Exception as e:
+            print(f"[AVISO] Erro ao aplicar opção --politica: {politica} -> {e}")
+    # -------------------------------------------------------
 
     gl = ax.gridlines(draw_labels=True, linewidth=0.3, color='gray', alpha=0.5)
     gl.top_labels = False
     gl.right_labels = False
     gl.xformatter = LONGITUDE_FORMATTER
     gl.yformatter = LATITUDE_FORMATTER
+
 
     norm = BoundaryNorm(cores, ncolors=256)
     cmap = plt.get_cmap(colormap)
@@ -148,6 +160,8 @@ if __name__ == "__main__":
     parser.add_argument("--titulo", default="", help="Título exibido na figura antes do intervalo de datas")
     # >>> NOVO: escolher o colormap (padrão turbo)
     parser.add_argument("--colormap", default="turbo", help="Nome do colormap do Matplotlib (padrão: turbo)")
+    parser.add_argument("--politica", nargs="+", default=["black", "0.5", "0.3"],
+                        help="Desenha fronteiras políticas. Use 'off' para desligar ou 'cor largura_borda largura_estado' (ex: --politica black 0.5 0.3)")
     args = parser.parse_args()
     # Validação opcional do colormap
     try:
