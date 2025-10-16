@@ -94,7 +94,7 @@ def interpolar_grade(lat, lon, campo, resolucao=0.1):
     campo_interp = griddata(pontos, valores, (lon_i, lat_i), method="linear")
     return lat_interp, lon_interp, campo_interp
 
-def gerar_mapa(chuva, lat, lon, titulo, cores, saida_png, limites, shapefile=None):
+def gerar_mapa(chuva, lat, lon, titulo, cores, saida_png, limites, shapefile=None, colormap="turbo"):
     min_lat, max_lat, min_lon, max_lon = limites
     plt.figure(figsize=(10, 6))
     proj = ccrs.PlateCarree()
@@ -112,7 +112,7 @@ def gerar_mapa(chuva, lat, lon, titulo, cores, saida_png, limites, shapefile=Non
     gl.yformatter = LATITUDE_FORMATTER
 
     norm = BoundaryNorm(cores, ncolors=256)
-    cmap = plt.get_cmap("turbo")
+    cmap = plt.get_cmap(colormap)
     cs = ax.pcolormesh(lon, lat, chuva, cmap=cmap, norm=norm, transform=proj)
 
     cb = plt.colorbar(cs, orientation='horizontal', pad=0.05, aspect=40)
@@ -146,6 +146,8 @@ if __name__ == "__main__":
                         help="Escala de cores ou chave do cpc.config (ex: --cores 0 10 20 ou --cores escala_verao)")
     parser.add_argument("--figura", default="", help="Prefixo para nome dos arquivos gerados")
     parser.add_argument("--titulo", default="", help="Título exibido na figura antes do intervalo de datas")
+    # >>> NOVO: escolher o colormap (padrão turbo)
+    parser.add_argument("--colormap", default="turbo", help="Nome do colormap do Matplotlib (padrão: turbo)")
     args = parser.parse_args()
 
     data_ini = ler_data(args.data_inicial)
@@ -178,8 +180,12 @@ if __name__ == "__main__":
     if args.interpolacao:
         lat_i, lon_i, soma_i = interpolar_grade(lat, lon, chuva_soma, resolucao=args.resolucao)
         lat_j, lon_j, media_j = interpolar_grade(lat, lon, chuva_media, resolucao=args.resolucao)
-        gerar_mapa(soma_i, lat_i, lon_i, f"{args.titulo} {data_ini:%Y-%m-%d} a {data_fim:%Y-%m-%d}", cores, nome_soma, limites, shapefile=args.shapefile)
-        gerar_mapa(media_j, lat_j, lon_j, f"{args.titulo} {data_ini:%Y-%m-%d} a {data_fim:%Y-%m-%d} (média)", cores, nome_media, limites, shapefile=args.shapefile)
+        gerar_mapa(soma_i, lat_i, lon_i, f"{args.titulo} {data_ini:%Y-%m-%d} a {data_fim:%Y-%m-%d}",
+                   cores, nome_soma, limites, shapefile=args.shapefile, colormap=args.colormap)
+        gerar_mapa(media_j, lat_j, lon_j, f"{args.titulo} {data_ini:%Y-%m-%d} a {data_fim:%Y-%m-%d} (média)",
+                   cores, nome_media, limites, shapefile=args.shapefile, colormap=args.colormap)
     else:
-        gerar_mapa(chuva_soma, lat, lon, f"{args.titulo} {data_ini:%Y-%m-%d} a {data_fim:%Y-%m-%d}", cores, nome_soma, limites, shapefile=args.shapefile)
-        gerar_mapa(chuva_media, lat, lon, f"{args.titulo} {data_ini:%Y-%m-%d} a {data_fim:%Y-%m-%d} (média)", cores, nome_media, limites, shapefile=args.shapefile)
+        gerar_mapa(chuva_soma, lat, lon, f"{args.titulo} {data_ini:%Y-%m-%d} a {data_fim:%Y-%m-%d}",
+                   cores, nome_soma, limites, shapefile=args.shapefile, colormap=args.colormap)
+        gerar_mapa(chuva_media, lat, lon, f"{args.titulo} {data_ini:%Y-%m-%d} a {data_fim:%Y-%m-%d} (média)",
+                   cores, nome_media, limites, shapefile=args.shapefile, colormap=args.colormap)
