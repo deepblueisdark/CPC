@@ -149,6 +149,12 @@ if __name__ == "__main__":
     # >>> NOVO: escolher o colormap (padrão turbo)
     parser.add_argument("--colormap", default="turbo", help="Nome do colormap do Matplotlib (padrão: turbo)")
     args = parser.parse_args()
+    # Validação opcional do colormap
+    try:
+        plt.get_cmap(args.colormap)
+    except ValueError:
+        print(f"[AVISO] Colormap '{args.colormap}' não encontrado. Usando 'turbo'.")
+        args.colormap = "turbo"
 
     data_ini = ler_data(args.data_inicial)
     data_fim = ler_data(args.data_final)
