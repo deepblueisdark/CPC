@@ -1,0 +1,5 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# o shell operacional roda em Linux: precisa de LF sempre
+*.sh text eol=lf
