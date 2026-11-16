@@ -60,9 +60,11 @@ CPC/
 ├── scripts/
 │   ├── rodar_cpc.sh             Rotina diaria completa (equiv. ao cron)
 │   ├── roda_SAE_opera.sh        Acumulado mensal SAE
-│   └── coleta_servidor.sh       Inventaria o CPC do servidor (roda no WSL)
+│   ├── coleta_servidor.sh       Inventaria o CPC do servidor (roda no WSL)
+│   └── sincroniza_opera.sh      Captura o OPERA/ do servidor (roda no WSL)
 ├── OPERA/                   Diretorio de trabalho, vazio no git
 ├── SAIDAS/                  Mapas e NetCDF gerados, vazio no git
+├── _producao/               Snapshot versionado do OPERA/ do servidor
 └── _legado/                 Versoes antigas e copias verbatim do servidor
 ```
 
@@ -117,7 +119,9 @@ python OPERACIONAL/cpc_calcbacia.py 01/09/2026 16/11/2026 --saida chuva_diaria_C
 Regioes: `[AMS]`, `[BRASIL]`, `[SAARA]`, `[SAE]`.
 Secoes `[ANOMALIA]` e `[ANOMALIA_PER]` alimentam os mapas de anomalia.
 
-As escalas e a regiao `[SAE]` sao os valores que rodam em producao.
+As escalas sao os valores que rodam em producao. A regiao `[SAE]` e a
+excecao: as latitudes foram corrigidas aqui em 2026-11-16 e **diferem
+da producao de proposito** — ver `_producao/DIVERGENCIAS.md`.
 **Ao rodar no servidor**, descomente em `[DEFAULT]` as linhas
 `repositorio` e `shapefile_dir` com os caminhos `/home/<usuario>/...`.
 
@@ -135,8 +139,35 @@ ser providenciados:
 | Shapefiles NFE | `/home/<usuario>/STUFF/SHAPES/NFE/` | variavel `SHAPEDIR_NFE` |
 | NetCDF do CPC/NOAA | `repositorio` no `cpc.config` | baixados por `cpc_download.py` |
 
-## Pendencia aberta
+## Sincronizacao com a producao
 
-**`[SAE]` tem `min_lat` (-8) maior que `max_lat` (-21)**, invertido em
-relacao as outras secoes. Esta assim em producao desde 2025-10 e as
-imagens diarias saem; copiado verbatim, mas vale confirmar.
+O servidor continua rodando de `~/PRODUCAO/CPC/OPERA/`, fora do git, e
+assim fica. Para que o codigo que roda de fato tenha historico, o
+repositorio guarda um snapshot dele em `_producao/OPERA/`:
+
+```bash
+# no WSL da maquina de desenvolvimento, nao no servidor
+bash scripts/sincroniza_opera.sh
+```
+
+A sincronizacao tem **um sentido so** — servidor para repositorio. O
+script apenas le do servidor (`ssh` + `tar`), nunca escreve la. Ao
+terminar, ele mostra o que mudou na producao desde o ultimo snapshot
+commitado. As diferencas intencionais entre as duas copias estao em
+`_producao/DIVERGENCIAS.md`; o que aparecer fora daquela lista e drift
+de verdade.
+
+## Pendencias abertas
+
+- **`[SAE]`:** as latitudes foram corrigidas neste repositorio em
+  2026-11-16 (`min_lat = -21`, `max_lat = -8`), mas **a producao segue
+  com os valores invertidos** (`-8` / `-21`), como esta desde 2025-10.
+  Antes de levar o config ao servidor, gerar uma imagem do SAE com os
+  valores novos e comparar com a do dia: o recorte pode mudar.
+- **Push para o GitHub:** o historico local divergiu de `origin/main`
+  (`ec25759`); um push seria rejeitado. Decidir entre `--force` e um
+  branch novo. O historico antigo esta preservado em
+  `CPC_backup_2026-11-16/BACKUP_GITHUB_CPC_2026-11-16.tar.gz`.
+- **`__pycache__/cpc_calcbacia.cpython-312.pyc`** nao pode ser removido
+  (`Permission denied`, trava do OneDrive). Ignorado pelo git; apagar a
+  mao quando o OneDrive liberar.

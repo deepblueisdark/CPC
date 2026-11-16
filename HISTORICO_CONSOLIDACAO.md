@@ -256,3 +256,70 @@ Tudo que foi apagado hoje esta nesses arquivos.
 `__pycache__/cpc_calcbacia.cpython-312.pyc` nao pode ser removido:
 `Permission denied`, provavelmente trava do OneDrive. Esta ignorado
 pelo git; apagar na mao quando o OneDrive liberar.
+
+---
+
+# Quarta rodada — sincronizacao com a producao (2026-11-16, noite)
+
+Decisao do usuario: a producao **nao** muda. O servidor continua
+rodando de `~/PRODUCAO/CPC/OPERA/`, fora do git. O que o repositorio
+passa a fazer e **capturar** esse diretorio, para o codigo que roda de
+fato ficar sob historico de versao.
+
+## Sincronizacao de captura, em um sentido so
+
+Criado `scripts/sincroniza_opera.sh`, que roda no WSL da maquina de
+desenvolvimento — a unica ponte que alcanca o servidor por SSH e ao
+mesmo tempo enxerga o `E:`. O script:
+
+1. le a arvore completa do `OPERA/` remoto para `_producao/ARVORE_OPERA.txt`,
+   com tamanhos, datas e hashes, inclusive dos arquivos que nao sao
+   copiados;
+2. traz codigo e configs para `_producao/OPERA/`, substituindo o
+   snapshot inteiro, para que arquivo apagado no servidor desapareca
+   tambem daqui;
+3. gera `_producao/MANIFESTO.txt` com o md5 de cada arquivo;
+4. mostra **o que mudou na producao desde o ultimo snapshot commitado**
+   — a deteccao de drift que interessa no dia a dia;
+5. compara o snapshot com o codigo ativo do repositorio, normalizando
+   CRLF e espaco no fim da linha.
+
+Acesso remoto so de leitura (`ssh` + `tar` para stdout). O script nunca
+escreve no servidor.
+
+Dado operacional fica fora do snapshot, como no resto do projeto.
+`log_cpc.txt` precisou de exclusao por nome: casa com `*.txt` e teria
+entrado junto com o codigo.
+
+## `_producao/`
+
+- `README.md` — o que a pasta e, como atualizar, o que entra e o que nao.
+- `DIVERGENCIAS.md` — as diferencas **intencionais** entre repositorio e
+  producao, para a etapa 5 ter como ser lida. Sem essa lista, sete
+  arquivos aparecem como divergentes e nao da para distinguir patch de
+  drift.
+
+Na conferencia, o levantamento da terceira rodada estava desatualizado:
+sao **sete** os scripts com o bloco `_raiz_projeto()`, nao seis —
+`PLOTAGEM/cpc_plota_anomalia.py` tambem o tem. `cpc_calcula_anomalia.py`
+nao entra na lista porque nao le o `cpc.config`: recebe tudo por
+`argparse`.
+
+## `[SAE]` corrigido no repositorio, nao na producao
+
+As latitudes da secao `[SAE]` passaram a `min_lat = -21` e
+`max_lat = -8`, na mesma convencao das outras secoes. A producao segue
+com `-8` / `-21`, como esta desde 2025-10.
+
+E uma divergencia deliberada, registrada no `cpc.config`, no
+`README.md` e em `_producao/DIVERGENCIAS.md`. **Antes de levar o config
+ao servidor, gerar uma imagem do SAE com os valores novos e comparar
+com a do dia** — o recorte do mapa pode mudar, e por enquanto o que
+esta no ar e a versao invertida.
+
+## Nao feito
+
+- **Push para o GitHub**, por decisao do usuario nesta rodada. O
+  historico local segue divergente de `origin/main` (`ec25759`).
+- **Primeira execucao do `sincroniza_opera.sh`**: depende de rodar no
+  WSL. Enquanto nao rodar, `_producao/OPERA/` esta vazia.
