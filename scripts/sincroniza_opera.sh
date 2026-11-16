@@ -190,5 +190,55 @@ while IFS= read -r f; do
     fi
 done < <(find "$SNAP" -type f | sort)
 
+# ----------------------------------------------------------
+# etapa 6 — cpc.config: comparacao chave por chave
+# ----------------------------------------------------------
+# No cpc.config o diff de texto engana: as duas copias tem secoes
+# em ordem diferente, e o espacamento entre os valores das escalas
+# conta como diferenca sem ser uma. Aqui a comparacao e semantica.
+# Quais diferencas sao esperadas: _producao/DIVERGENCIAS.md
+if [ -f "$SNAP/cpc.config" ] && command -v python3 >/dev/null 2>&1; then
+    echo ">> cpc.config — producao x repositorio, chave por chave:"
+    python3 - "$SNAP/cpc.config" "$RAIZ/cpc.config" <<'FIMPY'
+import configparser, sys
+
+def carrega(caminho):
+    c = configparser.ConfigParser()
+    c.read(caminho, encoding="utf-8")
+    d = {}
+    for k, v in c.defaults().items():
+        d[("DEFAULT", k)] = v.strip()
+    padrao = set(c.defaults())
+    for s in c.sections():
+        for k in c.options(s):
+            if k not in padrao:
+                d[(s, k)] = c.get(s, k).strip()
+    return d
+
+def corta(v):
+    if v is None:
+        return "(ausente)"
+    return v if len(v) <= 46 else v[:43] + "..."
+
+prod, repo = carrega(sys.argv[1]), carrega(sys.argv[2])
+n = 0
+for chave in sorted(prod.keys() | repo.keys()):
+    p, r = prod.get(chave), repo.get(chave)
+    if p == r:
+        continue
+    n += 1
+    secao, k = chave
+    if p is not None and r is not None and p.split() == r.split():
+        print("   [%s] %s: so espacamento, valores iguais" % (secao, k))
+        continue
+    print("   [%s] %s" % (secao, k))
+    print("       producao    : %s" % corta(p))
+    print("       repositorio : %s" % corta(r))
+print("   (nenhuma diferenca)" if n == 0 else
+      "   %d chaves diferentes — confira contra _producao/DIVERGENCIAS.md" % n)
+FIMPY
+    echo
+fi
+
 echo
 echo "Pronto. Volte na conversa e diga que a sincronizacao terminou."
