@@ -204,3 +204,55 @@ E tres scripts de funcionalidade ausente, da sandbox `SAE/`:
   foi alterado la. Decidir se producao passa a apontar para o
   repositorio consolidado, e como.
 - Push para o GitHub: o historico novo divergiu do remoto.
+
+---
+
+# Terceira rodada — repositorio de codigo (2026-11-16, fim da tarde)
+
+Decisao do usuario: o repositorio guarda **todos os scripts** das tres
+aplicacoes (SAE, SIN, NFE) e **nenhum operacional**. O que roda no dia
+a dia e a producao no servidor; a pasta local e so desenvolvimento.
+
+## Acervo de scripts completado
+
+Acrescentados a `_legado/servidor/` os quatro arquivos do servidor que
+ainda nao tinham representacao: `cpc_calcbacia.py.sandbox_SAE`,
+`cpc_calcbacia.py.raiz`, `roda_SAE_opera.sh.sandbox_SAE` e
+`cpc.config.local`.
+
+Verificacao por hash, desconsiderando CRLF e o bloco de resolucao de
+caminhos: **os 33 scripts e configs do servidor estao todos no
+repositorio**, como versao ativa ou copia verbatim. As unicas
+diferencas em relacao ao servidor sao os patches intencionais da
+consolidacao.
+
+## Operacional retirado da pasta local
+
+- 3 planilhas de `OPERA/` (7,2 MB) e 49 PNGs de `SAIDAS/` (6,5 MB)
+  apagados. As duas pastas ficam vazias, so como ponto de montagem da
+  execucao local.
+- `SHAPES/` removido do repositorio, inclusive o shapefile SAE que
+  havia sido trazido na segunda rodada. Shapefile e dado operacional.
+  O `roda_SAE_opera.sh` voltou a apontar para o caminho do servidor,
+  sobreponivel pela variavel `SHAPEFILE`.
+- `.gitignore` passou a barrar `*.xlsx`, `SHAPES/` e as extensoes de
+  shapefile, para nao entrarem por descuido.
+
+## Backups movidos para fora do repositorio
+
+De `CPC/_backup/` para `<pasta-de-backups>\`,
+conferidos por md5 e com os tar.gz testados antes de apagar os
+originais:
+
+- `BACKUP_Devel_CPC_2026-11-16.tar.gz` (13 MB)
+- `BACKUP_GITHUB_CPC_2026-11-16.tar.gz` (113 KB, com o .git original)
+- `CPC_SERVIDOR.tar.gz` (796 KB)
+- `INVENTARIO_SERVIDOR.txt` (30 KB)
+
+Tudo que foi apagado hoje esta nesses arquivos.
+
+## Pendencia tecnica
+
+`__pycache__/cpc_calcbacia.cpython-312.pyc` nao pode ser removido:
+`Permission denied`, provavelmente trava do OneDrive. Esta ignorado
+pelo git; apagar na mao quando o OneDrive liberar.

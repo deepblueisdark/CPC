@@ -22,10 +22,12 @@ set -euo pipefail
 RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # ----- shapefile das bacias SAE -----
-# Ajuste SHAPEFILE se o arquivo estiver em outro lugar. O valor
-# padrao segue o shapefile_dir do cpc.config.
-# ATENCAO: este .shp NAO esta dentro do repositorio.
-SHAPEFILE="${SHAPEFILE:-${RAIZ}/SHAPES/SAE/SAE_TODAS_AS_BACIAS_HICON_POLY.shp}"
+# Shapefiles NAO ficam no repositorio, por decisao de projeto: aqui
+# vive codigo, e os shapes sao dado operacional. O padrao abaixo e o
+# caminho do servidor de producao; sobreponha com a variavel
+# SHAPEFILE ao rodar em outra maquina, por exemplo no WSL:
+#   SHAPEFILE=<caminho-dos-shapes-SAE>/SAE_TODAS_AS_BACIAS_HICON_POLY.shp
+SHAPEFILE="${SHAPEFILE:-/home/<usuario>/STUFF/SHAPES/SAE/OPERACIONAL/SAE_TODAS_AS_BACIAS_HICON_POLY.shp}"
 
 SAIDA_DIR="${RAIZ}/SAIDAS/CLIMA"
 NETCDF="${SAIDA_DIR}/SAE_opera.nc"

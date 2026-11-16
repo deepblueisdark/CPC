@@ -11,6 +11,12 @@ observada a partir dos dados **CPC Unified Gauge-Based Analysis
 > todas incompletas: duas copias locais e o servidor de producao
 > `<usuario>@<servidor>:~/PRODUCAO/CPC`.
 > Ver `HISTORICO_CONSOLIDACAO.md`.
+>
+> **Escopo: este repositorio guarda codigo, nao operacional.** Os
+> scripts das tres aplicacoes (SAE, SIN, NFE) ficam aqui; as planilhas
+> acumuladoras, os shapefiles, os mapas gerados e os logs sao dado
+> operacional e vivem no servidor. `OPERA/` e `SAIDAS/` existem vazias
+> apenas como pontos de montagem da execucao local.
 
 ## Como o sistema roda em producao
 
@@ -55,9 +61,8 @@ CPC/
 │   ├── rodar_cpc.sh             Rotina diaria completa (equiv. ao cron)
 │   ├── roda_SAE_opera.sh        Acumulado mensal SAE
 │   └── coleta_servidor.sh       Inventaria o CPC do servidor (roda no WSL)
-├── SHAPES/SAE/              Shapefile das bacias SAE
-├── OPERA/                   Diretorio de trabalho (fora do git)
-├── SAIDAS/                  Mapas e NetCDF gerados (fora do git)
+├── OPERA/                   Diretorio de trabalho, vazio no git
+├── SAIDAS/                  Mapas e NetCDF gerados, vazio no git
 └── _legado/                 Versoes antigas e copias verbatim do servidor
 ```
 
@@ -116,16 +121,22 @@ As escalas e a regiao `[SAE]` sao os valores que rodam em producao.
 **Ao rodar no servidor**, descomente em `[DEFAULT]` as linhas
 `repositorio` e `shapefile_dir` com os caminhos `/home/<usuario>/...`.
 
-## Pendencias conhecidas
+## O que nao esta aqui, e de onde vem
 
-- **Quatro planilhas acumuladoras existem so no servidor** e sao
-  necessarias para a cadeia SIMOP rodar localmente:
-  `CHUVA_OBSERVADA.xlsx`, `CHUVA_OBSERVADA_CPC_COMPLETA.xlsx`,
-  `CHUVA_CPC_COMPLETA_SIN.xlsx`, `chuva_SIN.xlsx`.
-  Devem ser copiadas para `OPERA/`.
-- **Shapes de SIN e NFE nao estao no repositorio** — ficam em
-  `/home/<usuario>/STUFF/SHAPES/{SIN,NFE}` no servidor. Ajuste
-  `SHAPEDIR_SIN` / `SHAPEDIR_NFE` ao rodar fora dele.
-- **`[SAE]` tem `min_lat` (-8) maior que `max_lat` (-21)**, invertido
-  em relacao as outras secoes. Esta assim em producao e as imagens
-  diarias saem; copiado verbatim, mas vale confirmar.
+Por decisao de projeto o repositorio nao carrega dado operacional.
+Para rodar a cadeia completa fora do servidor, estes itens precisam
+ser providenciados:
+
+| Item | Onde vive | Como apontar |
+|---|---|---|
+| Planilhas acumuladoras (`CHUVA_OBSERVADA*.xlsx`, `CHUVA_CPC_COMPLETA_SIN.xlsx`, `chuva_diaria_CPC_NFE.xlsx`, `chuva_SIN.xlsx`) | `~/PRODUCAO/CPC/OPERA/` no servidor | copiar para `OPERA/` |
+| Shapefiles SAE | `/home/<usuario>/STUFF/SHAPES/SAE/OPERACIONAL/` | `shapefile_dir` no `cpc.config`, ou a variavel `SHAPEFILE` |
+| Shapefiles SIN | `/home/<usuario>/STUFF/SHAPES/SIN/` | variavel `SHAPEDIR_SIN` |
+| Shapefiles NFE | `/home/<usuario>/STUFF/SHAPES/NFE/` | variavel `SHAPEDIR_NFE` |
+| NetCDF do CPC/NOAA | `repositorio` no `cpc.config` | baixados por `cpc_download.py` |
+
+## Pendencia aberta
+
+**`[SAE]` tem `min_lat` (-8) maior que `max_lat` (-21)**, invertido em
+relacao as outras secoes. Esta assim em producao desde 2025-10 e as
+imagens diarias saem; copiado verbatim, mas vale confirmar.

@@ -35,7 +35,16 @@ venv/
 
 # --- dados brutos e intermediarios ---
 *.nc
+*.xlsx
 tmp_cpc_bin/
+
+# --- shapefiles: dado operacional, vive fora do repositorio ---
+SHAPES/
+*.shp
+*.shx
+*.dbf
+*.prj
+*.cpg
 
 # --- windows / onedrive ---
 desktop.ini
