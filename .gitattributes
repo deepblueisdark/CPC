@@ -12,3 +12,13 @@
 *.cpg binary
 *.nc  binary
 *.xlsx binary
+
+# ==========================================================
+# _producao/ e espelho verbatim do servidor: fidelidade de byte
+# importa mais que normalizacao. Cinco dos doze arquivos da
+# producao tem CRLF, e e assim que eles rodam la; normalizar
+# faria o blob commitado divergir do servidor e dos md5 do
+# MANIFESTO.txt. A regra vem depois das anteriores de proposito:
+# no .gitattributes vale a ultima que casar.
+# ==========================================================
+_producao/** -text
