@@ -111,3 +111,96 @@ Ativo: apenas `PLOTAGEM/cpc_plota_clima_unificado.py`.
   branch novo.
 - Os valores de `[SAE]` e `escala_cores_mensal` precisam da sua
   confirmacao.
+
+---
+
+# Segunda rodada — comparacao com o servidor (2026-11-16, tarde)
+
+A sessao nao alcanca `<servidor>` por rede (nenhuma porta sai da
+allowlist) e o computer use recusa digitacao em IDEs e terminais
+(`tier: "click"`). A coleta foi feita pelo WSL da maquina local, com
+`scripts/coleta_servidor.sh`, que alcanca o servidor e enxerga o `E:`.
+
+## O que havia no servidor
+
+`/home/<usuario>/PRODUCAO/CPC` tem **tres** copias internas:
+
+| Diretorio | Papel |
+|---|---|
+| `CPC/` (raiz) | copia antiga, rastreada no git, 8 commits atras do GitHub |
+| `CPC/OPERA/` | **producao** — e o que o cron executa; nao rastreada |
+| `CPC/SAE/` | sandbox de desenvolvimento; nao rastreada |
+
+O git da raiz estava em `624e45d`, oito commits atras do
+`origin/main`, com `cpc.config` modificado e `OPERA/`, `SAE/`,
+`cpc.config.local` e `log_cpc.txt` nao rastreados. Ou seja: o que
+roda em producao nunca esteve sob versionamento.
+
+## Resultado da comparacao
+
+Comparacao por hash, normalizando CRLF e espacos finais.
+
+**Todo o codigo que o servidor executa em `OPERA/` e identico ao que
+foi consolidado** — os 10 scripts batem byte a byte. A consolidacao
+da manha acertou o codigo que importa.
+
+Faltavam duas pecas, ambas so no servidor:
+
+1. **`OPERA/rodar_cpc.sh`** — o orquestrador do cron, que amarra o
+   sistema inteiro. Nao existia em nenhuma copia local. Portado para
+   `scripts/rodar_cpc.sh`; original em `_legado/servidor/`.
+2. **`OPERA/cpc.config`** — o config de producao, com as escalas e a
+   regiao `[SAE]` reais.
+
+E tres scripts de funcionalidade ausente, da sandbox `SAE/`:
+
+- `cpc_calcula_anomalia.py` -> `PLOTAGEM/` (introduz dependencia `xarray`)
+- `cpc_plota_anomalia.py` -> `PLOTAGEM/`
+- `cpc_plota_chuva_acumulada.py` e `cpc_calcula_anomalia_old.py` -> `_legado/`
+
+## Correcoes que a comparacao obrigou
+
+- **Os valores que eu havia chutado estavam errados.** A
+  `escala_cores_mensal` de producao tem 31 niveis de 0.1 a 300 mm/mes;
+  eu havia posto 15 niveis de 1 a 1000. A regiao `[SAE]` real e
+  lat -8/-21, lon 285/305; eu havia posto -21/-6 e 284/306.
+  Ambos substituidos pelos valores de producao.
+- **Escalas que faltavam** foram acrescentadas: `escala_diaria`,
+  `escala_clima`, `escala_clima_simples`, e as secoes `[ANOMALIA]` e
+  `[ANOMALIA_PER]` (estas vindas da sandbox `SAE/cpc.config`).
+- **`[SAE]` tem `min_lat` maior que `max_lat`** (-8 contra -21),
+  invertido em relacao as outras secoes. Copiado verbatim porque e
+  assim que roda em producao; sinalizado no `cpc.config` e no README.
+- **As duas "versoes divergentes" de `cpc_plota_clima.py` eram o mesmo
+  arquivo.** Diferiam apenas em CRLF. Os dois arquivos que eu havia
+  arquivado como `_V1_devel` e `_V1_github` foram colapsados em
+  `_legado/cpc_plota_clima_V1.py`.
+- **`DADOS/` foi substituido por `OPERA/`.** A leitura dos scripts
+  SIMOP mostrou que eles leem e gravam as planilhas acumuladoras por
+  nome simples no diretorio corrente, entao o diretorio de trabalho
+  precisa ser plano, como no servidor. As tres planilhas locais foram
+  movidas para `OPERA/`.
+- **O shapefile deixou de ser pendencia**: `SAE_TODAS_AS_BACIAS_HICON_POLY`
+  veio do servidor para `SHAPES/SAE/`, e o `roda_SAE_opera.sh` passou a
+  apontar para ele por padrao.
+- `.gitattributes` ganhou `*.sh text eol=lf`, ja que os shells rodam
+  no servidor Linux.
+
+## O que o servidor tem e nao foi trazido
+
+- As quatro planilhas acumuladoras (12 MB), excluidas do pacote de
+  coleta: `CHUVA_OBSERVADA.xlsx`, `CHUVA_OBSERVADA_CPC_COMPLETA.xlsx`,
+  `CHUVA_CPC_COMPLETA_SIN.xlsx`, `chuva_SIN.xlsx`. Sem elas a cadeia
+  SIMOP nao roda localmente.
+- Os shapes de SIN e NFE (`/home/<usuario>/STUFF/SHAPES/{SIN,NFE}`).
+- As copias divergentes e mais antigas da sandbox `SAE/`
+  (`cpc_calcbacia.py`, `roda_SAE_opera.sh`, `cpc.config`) — eram
+  rascunhos nunca promovidos a producao. Os dois `cpc.config` do
+  servidor estao em `_legado/servidor/` para referencia.
+
+## Ainda em aberto
+
+- O servidor continua rodando a partir de `OPERA/`, fora do git. Nada
+  foi alterado la. Decidir se producao passa a apontar para o
+  repositorio consolidado, e como.
+- Push para o GitHub: o historico novo divergiu do remoto.

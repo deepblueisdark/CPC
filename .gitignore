@@ -13,9 +13,15 @@ SAIDAS/**
 !SAIDAS/.gitkeep
 !SAIDAS/*/.gitkeep
 
-# --- dados de entrada pesados ---
-DADOS/**
-!DADOS/.gitkeep
+# --- diretorio de trabalho da rotina diaria ---
+# Espelha o OPERA/ do servidor: planilhas acumuladoras, logs e
+# graficos por bacia. Pesado e mutavel, fica fora do git.
+OPERA/**
+!OPERA/.gitkeep
+graficos_bacias/
+graficos_bacias_NFE/
+log_cpc.txt
+cron.log
 
 # --- backups da consolidacao ---
 _backup/

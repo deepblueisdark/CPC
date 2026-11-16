@@ -3,3 +3,12 @@
 
 # o shell operacional roda em Linux: precisa de LF sempre
 *.sh text eol=lf
+
+# shapefiles e binarios: nunca normalizar
+*.shp binary
+*.shx binary
+*.dbf binary
+*.prj binary
+*.cpg binary
+*.nc  binary
+*.xlsx binary

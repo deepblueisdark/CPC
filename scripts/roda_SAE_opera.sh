@@ -25,7 +25,7 @@ RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # Ajuste SHAPEFILE se o arquivo estiver em outro lugar. O valor
 # padrao segue o shapefile_dir do cpc.config.
 # ATENCAO: este .shp NAO esta dentro do repositorio.
-SHAPEFILE="${SHAPEFILE:-<caminho-dos-shapes-SAE>/SAE_TODAS_AS_BACIAS_HICON_POLY.shp}"
+SHAPEFILE="${SHAPEFILE:-${RAIZ}/SHAPES/SAE/SAE_TODAS_AS_BACIAS_HICON_POLY.shp}"
 
 SAIDA_DIR="${RAIZ}/SAIDAS/CLIMA"
 NETCDF="${SAIDA_DIR}/SAE_opera.nc"
