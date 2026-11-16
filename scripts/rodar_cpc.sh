@@ -36,6 +36,26 @@ PY="${PY:-python3}"
 SHAPEDIR_SIN="${SHAPEDIR_SIN:-/home/<usuario>/STUFF/SHAPES/SIN}"
 SHAPEDIR_NFE="${SHAPEDIR_NFE:-/home/<usuario>/STUFF/SHAPES/NFE}"
 
+# Diretorio das rotinas especificas de empresa (cpc_SIMOP_*). Elas NAO
+# estao neste repositorio, por decisao de projeto: sao proprias de cada
+# empresa e vivem so no servidor. Em producao moram no proprio
+# diretorio de trabalho, que e o default abaixo.
+EMPRESAS="${EMPRESAS:-$WORKDIR}"
+
+ROTINAS_EMPRESA=( cpc_SIMOP_SAE.py
+                  cpc_SIMOP_SIN.py cpc_SIMOP_SIN_GRAFICOS.py
+                  cpc_SIMOP_NFE.py cpc_SIMOP_NFE_GRAFICOS.py )
+
+for _r in "${ROTINAS_EMPRESA[@]}"; do
+    if [ ! -f "$EMPRESAS/$_r" ]; then
+        echo "ERRO: rotina de empresa nao encontrada: $EMPRESAS/$_r" >&2
+        echo "      Essas rotinas ficam so no servidor e nao estao neste" >&2
+        echo "      repositorio. Aponte EMPRESAS=<diretorio> se estiverem" >&2
+        echo "      em outro lugar." >&2
+        exit 1
+    fi
+done
+
 HOJE=$(date +%d/%m/%Y)
 INICIO=$(date -d "90 days ago" +%d/%m/%Y)
 
@@ -55,19 +75,19 @@ $PY "$RAIZ/OPERACIONAL/cpc_download.py" -i "$INICIO" -f "$HOJE"
 
 # --- 1) SAE (bacias padrao do cpc.config) ---
 $PY "$RAIZ/OPERACIONAL/cpc_calcbacia.py" "$INICIO" "$HOJE" --saida chuva_diaria_CPC.xlsx
-$PY "$RAIZ/SAE/cpc_SIMOP_SAE.py"
+$PY "$EMPRESAS/cpc_SIMOP_SAE.py"
 
 # --- 2) SIN ---
 $PY "$RAIZ/OPERACIONAL/cpc_calcbacia.py" "$INICIO" "$HOJE" \
     --saida chuva_SIN.xlsx --shapefile "$SHAPEDIR_SIN" --padrao "SIN*.shp"
-$PY "$RAIZ/SIN/cpc_SIMOP_SIN.py"
-$PY "$RAIZ/SIN/cpc_SIMOP_SIN_GRAFICOS.py"
+$PY "$EMPRESAS/cpc_SIMOP_SIN.py"
+$PY "$EMPRESAS/cpc_SIMOP_SIN_GRAFICOS.py"
 
 # --- 3) NFE ---
 $PY "$RAIZ/OPERACIONAL/cpc_calcbacia.py" "$INICIO" "$HOJE" \
     --saida chuva_NFE.xlsx --shapefile "$SHAPEDIR_NFE" --padrao "NFE*.shp"
-$PY "$RAIZ/NFE/cpc_SIMOP_NFE.py"
-$PY "$RAIZ/NFE/cpc_SIMOP_NFE_GRAFICOS.py"
+$PY "$EMPRESAS/cpc_SIMOP_NFE.py"
+$PY "$EMPRESAS/cpc_SIMOP_NFE_GRAFICOS.py"
 
 # --- 4) acumulado mensal SAE + mapas ---
 bash "$RAIZ/scripts/roda_SAE_opera.sh"

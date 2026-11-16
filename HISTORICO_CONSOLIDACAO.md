@@ -323,3 +323,78 @@ esta no ar e a versao invertida.
   historico local segue divergente de `origin/main` (`ec25759`).
 - **Primeira execucao do `sincroniza_opera.sh`**: depende de rodar no
   WSL. Enquanto nao rodar, `_producao/OPERA/` esta vazia.
+
+---
+
+# Quinta rodada — rotinas de empresa fora do repositorio (2026-11-16, fim do dia)
+
+Correcao de rumo. O escopo registrado na terceira rodada — "o
+repositorio guarda **todos os scripts** das tres aplicacoes (SAE, SIN,
+NFE)" — estava errado.
+
+**Decisao dele:** o repositorio guarda **apenas os scripts
+principais**. As rotinas especificas de cada empresa ficam **so no
+servidor**, porque sao proprias de cada uma. (O caso ABCLUP e manual,
+nao tem script.)
+
+## O que saiu
+
+As cinco rotinas SIMOP, que estavam em **dois** lugares:
+
+| Onde | Desde |
+|---|---|
+| `SAE/`, `SIN/`, `NFE/` | `a019e0e`, o **primeiro** commit |
+| `_producao/OPERA/` | `84f8bda`, o snapshot da quarta rodada |
+
+Por estarem no primeiro commit, estavam em todos os dez. `git rm` nao
+bastava: foram purgadas do historico, o que so foi limpo porque nada
+havia sido pushado.
+
+O snapshot caiu de 12 para 7 arquivos. Consequencia que vale registrar:
+**os cinco arquivos que apareciam como identicos ao codigo ativo eram
+justamente as rotinas de empresa.** Dos 7 que restam, nenhum e
+identico — 4 diferem pelo patch de caminhos, 2 por serem versao
+portada e 1 e o `cpc.config`.
+
+## O que impede a volta
+
+O filtro mora no proprio `scripts/sincroniza_opera.sh`, na variavel
+`EXCLUI_EMPRESA` (`*SIMOP*`), e vale para as **tres** leituras do
+servidor: a arvore, a lista de hashes e a captura. Assim nem o conteudo
+nem os nomes voltam. A etapa 1 passou a reportar a **quantidade**
+encontrada, para que uma rotina nova no servidor nao passe em branco.
+
+Testado contra um diretorio que imita o `OPERA/`: as cinco rotinas e o
+`log_cpc.txt` ficam fora, os scripts principais entram.
+
+## `rodar_cpc.sh` com as rotinas fora
+
+O orquestrador chamava as rotinas por `$RAIZ/SAE/...`, que nao existe
+mais. Agora usa a variavel `EMPRESAS`, que por padrao aponta para o
+diretorio de trabalho — onde elas moram em producao — e confere as
+cinco **antes** de comecar, parando com mensagem clara se faltar
+alguma. Conferido: falha com codigo 1 sem criar lock, log nem arquivo.
+
+## O que continua visivel, e nao foi escondido
+
+Saiu o **codigo** das rotinas. Continuam no repositorio os **nomes** e
+a **sequencia de chamadas**, porque aparecem no orquestrador, no
+`cpc.config`, nos `_legado/servidor/` e na descricao do pipeline no
+README. Tirar isso tambem seria outra decisao, nao foi pedida e nao foi
+feita.
+
+## Registros limpos
+
+`_producao/MANIFESTO.txt` perdeu as 5 linhas de hash e
+`_producao/ARVORE_OPERA.txt` as 10 entradas correspondentes, com nota
+dizendo que foram capturados antes do filtro existir. As capturas
+seguintes ja saem filtradas na origem.
+
+## Backup antes da purga
+
+`_backup/ANTES_DA_PURGA_2026-11-16_1805.tar.gz` (345 KB), com o `.git`
+nos dez commits originais. Testado: restaura repositorio funcional,
+`fsck` limpo, as 10 entradas SIMOP preservadas. **Esse tarball e o
+unico lugar onde o historico antigo existe** — e esta dentro de
+`_backup/`, que o `.gitignore` barra. Mova para fora da pasta do
+repositorio.

@@ -12,10 +12,11 @@ observada a partir dos dados **CPC Unified Gauge-Based Analysis
 > `<usuario>@<servidor>:~/PRODUCAO/CPC`.
 > Ver `HISTORICO_CONSOLIDACAO.md`.
 >
-> **Escopo: este repositorio guarda codigo, nao operacional.** Os
-> scripts das tres aplicacoes (SAE, SIN, NFE) ficam aqui; as planilhas
-> acumuladoras, os shapefiles, os mapas gerados e os logs sao dado
-> operacional e vivem no servidor. `OPERA/` e `SAIDAS/` existem vazias
+> **Escopo: este repositorio guarda os scripts principais.** As
+> rotinas especificas de cada empresa (`cpc_SIMOP_*`) **nao** ficam
+> aqui: sao proprias de cada uma e vivem so no servidor. Planilhas
+> acumuladoras, shapefiles, mapas gerados e logs tambem sao dado
+> operacional e ficam la. `OPERA/` e `SAIDAS/` existem vazias
 > apenas como pontos de montagem da execucao local.
 
 ## Como o sistema roda em producao
@@ -31,13 +32,16 @@ Ela percorre, em ordem, com janela dos **ultimos 90 dias**:
 ```
 cpc_download.py          baixa/atualiza os NetCDF do CPC/NOAA
   -> cpc_calcbacia.py --saida chuva_diaria_CPC.xlsx        (bacias SAE)
-     -> cpc_SIMOP_SAE.py
+     -> cpc_SIMOP_SAE.py                                   (*)
   -> cpc_calcbacia.py --saida chuva_SIN.xlsx  --shapefile SIN
-     -> cpc_SIMOP_SIN.py  -> cpc_SIMOP_SIN_GRAFICOS.py
+     -> cpc_SIMOP_SIN.py  -> cpc_SIMOP_SIN_GRAFICOS.py      (*)
   -> cpc_calcbacia.py --saida chuva_NFE.xlsx  --shapefile NFE
-     -> cpc_SIMOP_NFE.py  -> cpc_SIMOP_NFE_GRAFICOS.py
+     -> cpc_SIMOP_NFE.py  -> cpc_SIMOP_NFE_GRAFICOS.py      (*)
   -> roda_SAE_opera.sh     acumulado mensal SAE + mapas
 ```
+
+`(*)` rotinas especificas de empresa: vivem **so no servidor** e nao
+estao neste repositorio. Ver "O que nao esta aqui, e de onde vem".
 
 O equivalente local e `scripts/rodar_cpc.sh`.
 
@@ -56,7 +60,6 @@ CPC/
 │   ├── cpc_climatology.py                Climatologia (versao enxuta)
 │   ├── cpc_calcula_anomalia.py           Anomalia absoluta e percentual
 │   └── cpc_plota_anomalia.py             Mapas de anomalia
-├── SAE/ SIN/ NFE/           Rotinas SIMOP (planilhas e graficos por bacia)
 ├── scripts/
 │   ├── rodar_cpc.sh             Rotina diaria completa (equiv. ao cron)
 │   ├── roda_SAE_opera.sh        Acumulado mensal SAE
@@ -104,6 +107,10 @@ python OPERACIONAL/cpc_download.py -i 01/09/2026 -f 16/11/2026
 python OPERACIONAL/cpc_calcbacia.py 01/09/2026 16/11/2026 --saida chuva_diaria_CPC.xlsx
 ```
 
+`scripts/rodar_cpc.sh` so roda inteiro onde as rotinas de empresa
+existirem. Ele confere isso antes de comecar e para com mensagem clara
+se nao as achar; aponte `EMPRESAS=<diretorio>` para onde elas estao.
+
 ## Configuracao (`cpc.config`)
 
 | Chave | Para que serve |
@@ -133,6 +140,7 @@ ser providenciados:
 
 | Item | Onde vive | Como apontar |
 |---|---|---|
+| **Rotinas de empresa** (`cpc_SIMOP_SAE.py`, `cpc_SIMOP_SIN*.py`, `cpc_SIMOP_NFE*.py`) | `~/PRODUCAO/CPC/OPERA/` no servidor | variavel `EMPRESAS` no `rodar_cpc.sh` |
 | Planilhas acumuladoras (`CHUVA_OBSERVADA*.xlsx`, `CHUVA_CPC_COMPLETA_SIN.xlsx`, `chuva_diaria_CPC_NFE.xlsx`, `chuva_SIN.xlsx`) | `~/PRODUCAO/CPC/OPERA/` no servidor | copiar para `OPERA/` |
 | Shapefiles SAE | `/home/<usuario>/STUFF/SHAPES/SAE/OPERACIONAL/` | `shapefile_dir` no `cpc.config`, ou a variavel `SHAPEFILE` |
 | Shapefiles SIN | `/home/<usuario>/STUFF/SHAPES/SIN/` | variavel `SHAPEDIR_SIN` |

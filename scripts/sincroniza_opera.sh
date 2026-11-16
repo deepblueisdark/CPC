@@ -43,6 +43,22 @@ ARVORE="$DEST/ARVORE_OPERA.txt"
 # junto com *.log na etapa 2.
 INCLUI=( "*.py" "*.sh" "*.config" "*.cfg" "*.txt" "*.md" "*.json" "*.yaml" "*.yml" )
 
+# ==========================================================
+# ROTINAS ESPECIFICAS DE EMPRESA — NAO ENTRAM NO REPOSITORIO
+# ==========================================================
+# Decisao de projeto (2026-11-16): o repositorio guarda os scripts
+# principais; as rotinas especificas de cada empresa ficam **so no
+# servidor**, porque sao proprias de cada uma. Elas seguem o padrao
+# de nome cpc_SIMOP_<EMPRESA>*.py.
+#
+# O filtro vale para as tres leituras do servidor — a arvore, a lista
+# de hashes e a captura — para que nem o conteudo nem os nomes entrem
+# aqui. A etapa 1 reporta apenas a QUANTIDADE encontrada, de modo que
+# uma rotina nova no servidor nao passe em branco.
+#
+# Nao relaxe este filtro sem decisao explicita.
+EXCLUI_EMPRESA="*SIMOP*"
+
 if [ ! -f "$RAIZ/cpc.config" ]; then
     echo "!! Nao parece ser a raiz do repositorio CPC: $RAIZ" >&2
     exit 1
@@ -67,14 +83,17 @@ if [ ! -d "\$OP" ]; then
     echo "!! \$OP nao existe no servidor"
     exit 2
 fi
-find "\$OP" -not -path "*/__pycache__/*" \
+find "\$OP" -not -path "*/__pycache__/*" -not -name '$EXCLUI_EMPRESA' \
      -printf "%y %10s  %TY-%Tm-%Td %TH:%TM  %P\n" 2>/dev/null | sort -k5
+echo
+echo "# --- rotinas de empresa ignoradas (ficam so no servidor) ---"
+echo "# quantidade: \$(find "\$OP" -maxdepth 2 -type f -name '$EXCLUI_EMPRESA' 2>/dev/null | wc -l)  (padrao $EXCLUI_EMPRESA)"
 echo
 echo "# --- hashes do codigo e dos configs ---"
 find "\$OP" -maxdepth 2 -type f \
      \( -name "*.py" -o -name "*.sh" -o -name "*.config" -o -name "*.cfg" \
         -o -name "*.txt" -o -name "*.md" -o -name "*.json" -o -name "*.yaml" -o -name "*.yml" \) \
-     -not -path "*/__pycache__/*" 2>/dev/null \
+     -not -path "*/__pycache__/*" -not -name '$EXCLUI_EMPRESA' 2>/dev/null \
   | sort \
   | while IFS= read -r f; do
       printf "%s  %s\n" "\$(md5sum "\$f" | cut -d" " -f1)" "\${f#\$OP/}"
@@ -110,7 +129,8 @@ trap 'rm -rf "$TMP"' EXIT
 ssh -o ConnectTimeout=15 "$SERVIDOR" \
     "cd '$OPERA_REMOTO' && find . -maxdepth 2 -type f \\( $ARGS_TAR \\) \
      -not -path './__pycache__/*' \
-     -not -name 'log_cpc.txt' -not -name '*.log' -print0 | tar -czf - --null -T -" \
+     -not -name 'log_cpc.txt' -not -name '*.log' \
+     -not -name '$EXCLUI_EMPRESA' -print0 | tar -czf - --null -T -" \
   | tar -xzf - -C "$TMP"
 
 if [ ! "$(ls -A "$TMP" 2>/dev/null)" ]; then
