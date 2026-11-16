@@ -1,0 +1,37 @@
+# ==========================================================
+# .gitignore — CPC
+#
+# Nota: o .gitignore antigo continha a linha "cpc.config", mas o
+# arquivo estava rastreado no repositorio (foi commitado antes da
+# regra existir), o que tornava a regra inocua e enganosa. O
+# cpc.config voltou a ser rastreado de forma explicita: ele nao
+# tem segredos, so caminhos, e documenta os equivalentes Linux.
+# ==========================================================
+
+# --- saidas geradas (mantem a pasta, ignora o conteudo) ---
+SAIDAS/**
+!SAIDAS/.gitkeep
+!SAIDAS/*/.gitkeep
+
+# --- dados de entrada pesados ---
+DADOS/**
+!DADOS/.gitkeep
+
+# --- backups da consolidacao ---
+_backup/
+
+# --- python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# --- dados brutos e intermediarios ---
+*.nc
+tmp_cpc_bin/
+
+# --- windows / onedrive ---
+desktop.ini
+Thumbs.db
+*.lnk
