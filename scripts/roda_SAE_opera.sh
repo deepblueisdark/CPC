@@ -21,13 +21,27 @@ set -euo pipefail
 # ----- raiz do projeto (pasta acima de scripts/) -----
 RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
+# ----------------------------------------------------------
+# Identidade do ambiente — vem de cpc.local, que fica fora do git
+# ----------------------------------------------------------
+# Este repositorio e publico e nao carrega onde a producao roda:
+# servidor, usuario e caminhos ficam em cpc.local, barrado pelo
+# .gitignore. Modelo em cpc.local.example.
+CPC_LOCAL="${CPC_LOCAL:-$RAIZ/cpc.local}"
+if [ -f "$CPC_LOCAL" ]; then
+    . "$CPC_LOCAL"
+fi
+
 # ----- shapefile das bacias SAE -----
 # Shapefiles NAO ficam no repositorio, por decisao de projeto: aqui
-# vive codigo, e os shapes sao dado operacional. O padrao abaixo e o
-# caminho do servidor de producao; sobreponha com a variavel
-# SHAPEFILE ao rodar em outra maquina, por exemplo no WSL:
-#   SHAPEFILE=<caminho-dos-shapes-SAE>/SAE_TODAS_AS_BACIAS_HICON_POLY.shp
-SHAPEFILE="${SHAPEFILE:-/home/<usuario>/STUFF/SHAPES/SAE/OPERACIONAL/SAE_TODAS_AS_BACIAS_HICON_POLY.shp}"
+# vive codigo, e os shapes sao dado operacional. O caminho vem do
+# cpc.local, ou da variavel SHAPEFILE passada pelo ambiente.
+if [ -z "${SHAPEFILE:-}" ]; then
+    echo "[ERRO] SHAPEFILE nao definido." >&2
+    echo "       Crie o cpc.local a partir do cpc.local.example," >&2
+    echo "       ou passe SHAPEFILE=/caminho/arquivo.shp $0" >&2
+    exit 1
+fi
 
 SAIDA_DIR="${RAIZ}/SAIDAS/CLIMA"
 NETCDF="${SAIDA_DIR}/SAE_opera.nc"

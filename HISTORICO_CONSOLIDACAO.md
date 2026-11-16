@@ -398,3 +398,92 @@ nos dez commits originais. Testado: restaura repositorio funcional,
 unico lugar onde o historico antigo existe** — e esta dentro de
 `_backup/`, que o `.gitignore` barra. Mova para fora da pasta do
 repositorio.
+
+---
+
+# Sexta rodada — preparar o repositorio para ser publico (2026-11-16, noite)
+
+Ao decidir que o repositorio no GitHub passaria a espelhar esta pasta,
+veio a descoberta que mudou o plano: **o repositorio publico nao expunha
+nada do servidor, e o trabalho do dia tinha acrescentado tudo.**
+
+O publico (`ec25759`, de 2025-11-05) tinha zero ocorrencias de IP, de
+usuario SSH, de hostname ou de caminho `/home/...`; so caminhos WSL da
+maquina local. Esta pasta, depois do dia, tinha o IP do servidor, o
+usuario, o hostname, o layout `/home/<usuario>/{PRODUCAO,STUFF,DADOS}` e
+o horario do cron em **20 arquivos rastreados** — nos scripts de coleta
+e sincronizacao e na documentacao.
+
+Publicar assim diria onde a producao esta, com que usuario entrar, que
+diretorios existem e quando os jobs rodam.
+
+## Decisao: publico, mas sem identidade de ambiente
+
+Nada que diga onde a producao roda fica rastreado. O que saiu do git:
+
+| Saiu | Por que |
+|---|---|
+| `_producao/` | espelho verbatim, carrega a config real da producao |
+| `_legado/servidor/` | copias verbatim do servidor, com caminhos reais |
+| `cpc.config` | caminhos desta maquina nas chaves ativas |
+
+Os tres continuam **em disco**, so deixaram de ser versionados.
+
+## O que entrou no lugar
+
+Dois modelos rastreados, e o real fica fora:
+
+- `cpc.local.example` -> `cpc.local`: servidor, `OPERA_REMOTO` e os
+  caminhos dos shapes. Usa a forma `${VAR:=valor}`, que so define se a
+  variavel ainda nao existir — assim um valor passado pelo ambiente
+  continua tendo precedencia.
+- `cpc.config.example` -> `cpc.config`: as escalas e as regioes (que
+  sao o conteudo que vale compartilhar) com os dois caminhos de
+  `[DEFAULT]` como placeholder.
+
+Os quatro scripts de shell passaram a carregar o `cpc.local` e a parar
+com mensagem clara se faltar variavel. Nenhum tem mais valor real
+embutido.
+
+**Detalhe que vale saber:** o `cpc.config` nao e opcional num clone
+novo. O bloco `_raiz_projeto()` localiza a raiz do projeto procurando
+justamente esse arquivo; sem ele, cada script cai no diretorio
+corrente. Por isso "Primeiros passos" no README manda copiar os dois
+modelos antes de qualquer coisa.
+
+## Deteccao de drift sem git
+
+A etapa 4 do `sincroniza_opera.sh` usava `git status` em
+`_producao/OPERA`, que deixou de ser rastreado. Agora compara o
+manifesto novo com o anterior, guardado ao lado em
+`MANIFESTO_ANTERIOR.txt`, e classifica cada arquivo como ALTERADO,
+NOVO ou SUMIU. Testado nos tres cenarios e no caso do primeiro
+snapshot, sem anterior com que comparar.
+
+A perda real: o historico do que rodou em producao deixa de existir no
+git. Fica o manifesto anterior, que cobre a comparacao de uma
+sincronizacao para a seguinte, mas nao a serie inteira.
+
+## Limpeza dos arquivos que ficaram
+
+IP, usuario, hostname, caminhos do servidor, caminhos locais da maquina
+e o horario do cron substituidos por placeholders em `README.md`,
+`HISTORICO_CONSOLIDACAO.md`, `cpc.config.example` e nos quatro scripts.
+Cuidado tomado: as substituicoes casam `<usuario>@` e `/home/<usuario>`, nunca
+`simop` solto, para nao estragar as mencoes a `SIMOP` em maiusculas,
+que sao outra coisa.
+
+Verificado: zero ocorrencias de IP, usuario SSH, hostname, caminhos do
+servidor ou caminhos de maquina em qualquer arquivo rastreado. As
+mencoes a "OneDrive" que sobraram sao sobre a trava de arquivo do
+OneDrive, nao caminhos.
+
+## GitHub
+
+O repositorio publico vai ser **apagado e recriado**, para que nenhum
+objeto antigo fique acessivel por SHA — um `force-push` trocaria o topo
+mas deixaria os commits antigos recuperaveis. Nele estavam expostas,
+desde 2025-11, tres rotinas de empresa: `cpc_SIMOP_SAE.py`,
+`cpc_SIMOP_SIN.py` e `cpc_SIMOP_SIN_GRAFICOS.py`.
+
+O que ja foi clonado ou forkado nesse periodo nao tem volta.

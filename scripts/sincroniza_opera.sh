@@ -22,19 +22,39 @@
 #                                   inclusive os dados que nao sao copiados
 #
 # Variaveis que dao para sobrepor:
-#     SERVIDOR=<usuario>@<servidor>
-#     OPERA_REMOTO=/home/<usuario>/PRODUCAO/CPC/OPERA
+#     SERVIDOR=usuario@host
+#     OPERA_REMOTO=/caminho/no/servidor/CPC/OPERA
 # ==========================================================
 
 set -uo pipefail
 
-SERVIDOR="${SERVIDOR:-<usuario>@<servidor>}"
-OPERA_REMOTO="${OPERA_REMOTO:-/home/<usuario>/PRODUCAO/CPC/OPERA}"
-
 RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# ----------------------------------------------------------
+# Identidade do ambiente — vem de cpc.local, que fica fora do git
+# ----------------------------------------------------------
+# Este repositorio e publico e nao carrega onde a producao roda:
+# servidor, usuario e caminhos ficam em cpc.local, barrado pelo
+# .gitignore. Modelo em cpc.local.example.
+CPC_LOCAL="${CPC_LOCAL:-$RAIZ/cpc.local}"
+[ -f "$CPC_LOCAL" ] && . "$CPC_LOCAL"
+
+faltando=""
+[ -z "${SERVIDOR:-}" ]     && faltando="$faltando SERVIDOR"
+[ -z "${OPERA_REMOTO:-}" ] && faltando="$faltando OPERA_REMOTO"
+if [ -n "$faltando" ]; then
+    echo "ERRO: faltam variaveis de ambiente:$faltando" >&2
+    echo "      Crie o cpc.local a partir do modelo:" >&2
+    echo "        cp '$RAIZ/cpc.local.example' '$RAIZ/cpc.local'" >&2
+    echo "      e preencha. Ou passe pelo ambiente:" >&2
+    echo "        SERVIDOR=usuario@host bash \$0" >&2
+    exit 1
+fi
+
 DEST="$RAIZ/_producao"
 SNAP="$DEST/OPERA"
 MANIFESTO="$DEST/MANIFESTO.txt"
+ANTERIOR="$DEST/MANIFESTO_ANTERIOR.txt"
 ARVORE="$DEST/ARVORE_OPERA.txt"
 
 # Extensoes de codigo e config: o que entra no snapshot.
@@ -151,6 +171,9 @@ echo
 # ----------------------------------------------------------
 # etapa 3 — manifesto
 # ----------------------------------------------------------
+# guarda o manifesto anterior, para a etapa 4 ter com o que comparar
+[ -f "$MANIFESTO" ] && cp -p "$MANIFESTO" "$ANTERIOR"
+
 {
     echo "# MANIFESTO — snapshot de $OPERA_REMOTO"
     echo "# origem : $SERVIDOR"
@@ -171,18 +194,40 @@ echo
 # ----------------------------------------------------------
 # etapa 4 — o que mudou desde o snapshot anterior
 # ----------------------------------------------------------
-if git -C "$RAIZ" rev-parse --git-dir >/dev/null 2>&1; then
-    echo ">> Mudancas na producao desde o ultimo snapshot:"
-    if git -C "$RAIZ" diff --quiet -- _producao/OPERA 2>/dev/null \
-       && [ -z "$(git -C "$RAIZ" ls-files --others --exclude-standard -- _producao/OPERA)" ]; then
-        echo "   (nenhuma — a producao esta igual ao ultimo snapshot commitado)"
+# _producao/ NAO e rastreado pelo git — o repositorio e publico e nao
+# carrega config de producao. Por isso o drift sai da comparacao entre
+# o manifesto novo e o anterior, guardado ao lado, e nao de git status.
+echo ">> Mudancas na producao desde o snapshot anterior:"
+if [ ! -f "$ANTERIOR" ]; then
+    echo "   (primeiro snapshot — nada com que comparar)"
+else
+    nomes()   { grep -v '^#' "$1" | awk 'NF==2 {print $2}' | sort; }
+    hash_de() { grep -v '^#' "$1" | awk -v n="$2" 'NF==2 && $2==n {print $1}'; }
+
+    mudou=0
+    while IFS= read -r n; do
+        [ -n "$n" ] || continue
+        if [ "$(hash_de "$ANTERIOR" "$n")" != "$(hash_de "$MANIFESTO" "$n")" ]; then
+            echo "   ALTERADO  $n"; mudou=1
+        fi
+    done < <(comm -12 <(nomes "$ANTERIOR") <(nomes "$MANIFESTO"))
+
+    while IFS= read -r n; do
+        [ -n "$n" ] && { echo "   NOVO      $n"; mudou=1; }
+    done < <(comm -13 <(nomes "$ANTERIOR") <(nomes "$MANIFESTO"))
+
+    while IFS= read -r n; do
+        [ -n "$n" ] && { echo "   SUMIU     $n"; mudou=1; }
+    done < <(comm -23 <(nomes "$ANTERIOR") <(nomes "$MANIFESTO"))
+
+    if [ "$mudou" -eq 0 ]; then
+        echo "   (nenhuma — a producao esta igual ao snapshot anterior)"
     else
-        git -C "$RAIZ" status --short -- _producao/OPERA
         echo
-        echo "   Detalhe: git -C \"$RAIZ\" diff -- _producao/OPERA"
+        echo "   Detalhe: diff '$ANTERIOR' '$MANIFESTO'"
     fi
-    echo
 fi
+echo
 
 # ----------------------------------------------------------
 # etapa 5 — snapshot x codigo ativo do repositorio

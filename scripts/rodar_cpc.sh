@@ -2,10 +2,9 @@
 # ==========================================================
 # rodar_cpc.sh — rotina diaria completa do CPC
 #
-# Portado em 2026-11-16 de
-#   <usuario>@<servidor>:~/PRODUCAO/CPC/OPERA/rodar_cpc.sh
-# que roda no cron do servidor todo dia as 09:00:
-#   <agendamento> .../OPERA/rodar_cpc.sh >> .../OPERA/cron.log 2>&1
+# Portado em 2026-11-16 do orquestrador que roda no cron do servidor
+# de producao, uma vez por dia. O caminho e o agendamento reais ficam
+# fora deste repositorio, que e publico.
 #
 # Este arquivo nao existia em nenhuma das copias locais — era a
 # peca que amarrava o sistema inteiro. Copia verbatim do original
@@ -31,10 +30,26 @@ LOCK="/tmp/cpc_cron.lock"
 
 PY="${PY:-python3}"
 
+# ----------------------------------------------------------
+# Identidade do ambiente — vem de cpc.local, que fica fora do git
+# ----------------------------------------------------------
+# Este repositorio e publico e nao carrega onde a producao roda:
+# servidor, usuario e caminhos ficam em cpc.local, barrado pelo
+# .gitignore. Modelo em cpc.local.example.
+CPC_LOCAL="${CPC_LOCAL:-$RAIZ/cpc.local}"
+if [ -f "$CPC_LOCAL" ]; then
+    . "$CPC_LOCAL"
+fi
+
 # Diretorios de shapes das rotinas SIN e NFE (sobrepoem o cpc.config).
-# Padroes do servidor de producao; ajuste se rodar em outra maquina.
-SHAPEDIR_SIN="${SHAPEDIR_SIN:-/home/<usuario>/STUFF/SHAPES/SIN}"
-SHAPEDIR_NFE="${SHAPEDIR_NFE:-/home/<usuario>/STUFF/SHAPES/NFE}"
+faltando=""
+if [ -z "${SHAPEDIR_SIN:-}" ]; then faltando="$faltando SHAPEDIR_SIN"; fi
+if [ -z "${SHAPEDIR_NFE:-}" ]; then faltando="$faltando SHAPEDIR_NFE"; fi
+if [ -n "$faltando" ]; then
+    echo "ERRO: faltam variaveis de ambiente:$faltando" >&2
+    echo "      Crie o cpc.local a partir do cpc.local.example e preencha." >&2
+    exit 1
+fi
 
 # Diretorio das rotinas especificas de empresa (cpc_SIMOP_*). Elas NAO
 # estao neste repositorio, por decisao de projeto: sao proprias de cada

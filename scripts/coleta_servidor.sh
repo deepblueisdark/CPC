@@ -16,8 +16,28 @@
 
 set -uo pipefail
 
-SERVIDOR="${SERVIDOR:-<usuario>@<servidor>}"
-DEST="${DEST:-<raiz-do-repositorio>/_backup}"
+RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# ----------------------------------------------------------
+# Identidade do ambiente — vem de cpc.local, que fica fora do git
+# ----------------------------------------------------------
+# Este repositorio e publico e nao carrega onde a producao roda:
+# servidor, usuario e caminhos ficam em cpc.local, barrado pelo
+# .gitignore. Modelo em cpc.local.example.
+CPC_LOCAL="${CPC_LOCAL:-$RAIZ/cpc.local}"
+if [ -f "$CPC_LOCAL" ]; then
+    . "$CPC_LOCAL"
+fi
+
+if [ -z "${SERVIDOR:-}" ]; then
+    echo "ERRO: SERVIDOR nao definido." >&2
+    echo "      Crie o cpc.local a partir do modelo:" >&2
+    echo "        cp '$RAIZ/cpc.local.example' '$RAIZ/cpc.local'" >&2
+    echo "      e preencha. Ou passe pelo ambiente:" >&2
+    echo "        SERVIDOR=usuario@host bash \$0" >&2
+    exit 1
+fi
+
+DEST="${DEST:-$RAIZ/_backup}"
 
 mkdir -p "$DEST"
 INV="$DEST/INVENTARIO_SERVIDOR.txt"

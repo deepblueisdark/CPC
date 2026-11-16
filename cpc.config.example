@@ -1,0 +1,108 @@
+# ==========================================================
+# cpc.config.example — modelo da configuracao do CPC
+#
+# Copie para cpc.config e ajuste os dois caminhos de [DEFAULT]:
+#
+#     cp cpc.config.example cpc.config
+#
+# O cpc.config e barrado pelo .gitignore de proposito: este
+# repositorio e publico e nao carrega caminhos de maquina nem do
+# servidor de producao. As escalas e as regioes abaixo sao as que
+# rodam em producao e podem ser usadas como estao.
+# ==========================================================
+
+# ==========================================================
+# cpc.config  —  configuracao unica do sistema CPC
+#
+# Consolidado em 2026-11-16 a partir de tres fontes:
+#   <raiz-do-repositorio>\cpc.config    (Windows, 2026-09-02)
+#   <pasta-antiga>\cpc.config           (WSL,     2025-06-16)
+#   <usuario>@<servidor>:~/PRODUCAO/CPC/OPERA/cpc.config  (PRODUCAO, 2025-10-01)
+#
+# As escalas e a regiao [SAE] vieram do servidor de PRODUCAO —
+# sao os valores que efetivamente rodam no cron diario das 09:00.
+# As secoes [ANOMALIA] vieram de ~/PRODUCAO/CPC/SAE/cpc.config.
+#
+# Copias verbatim das tres origens em _legado/servidor/.
+# ==========================================================
+
+[DEFAULT]
+# --- caminhos: Windows / maquina de desenvolvimento (ativos) ---
+repositorio = <caminho-dos-netcdf>
+shapefile_dir = <caminho-dos-shapes-SAE>
+shapefile_padrao = SAE*.shp
+
+# --- caminhos: servidor de producao (descomente ao rodar la) ---
+# repositorio = /home/<usuario>/DADOS/OBS/CHUVA/CPC_GAUGE
+# shapefile_dir = /home/<usuario>/STUFF/SHAPES/SAE/OPERACIONAL/
+#   Shapes das outras rotinas, passados por --shapefile no rodar_cpc.sh:
+#     SIN -> /home/<usuario>/STUFF/SHAPES/SIN   (padrao SIN*.shp)
+#     NFE -> /home/<usuario>/STUFF/SHAPES/NFE   (padrao NFE*.shp)
+
+prefixo = CPC_GAUGE_AMS
+
+# --- saidas (centralizadas em SAIDAS/ apos a consolidacao) ---
+mapa_dir = ./SAIDAS/MAPAS_CPC
+saida_excel = ./SAIDAS/PLANILHAS/chuva_diaria_CPC.xlsx
+
+# ==========================================================
+# ESCALAS DE CORES  (valores de producao)
+# ==========================================================
+# diaria (mm/dia)
+escala_cores = 0.1 1 2 3 4 5 7 10 15 20 25 30 40 50 75
+# diaria estendida
+escala_diaria = 0.1 1 2 3 4 5 7 10 15 20 25 30 40 50 75 100 150 200 300
+# mensal/acumulada (mm/mes) — usada por scripts/roda_SAE_opera.sh
+escala_cores_mensal = 0.1 0.5 1 2 3 5 7 10 13 15 20 25 30 35 40 45 50 60 70 80 90 100 120 140 160 180 200 220 240 260 300
+# climatologia
+escala_clima = 0 10 20 30 40 50 60 70 80 90 100 110 120 130 140 150 160 170 180 190 200 210 220 230 240 250 260 270 280 290 300
+escala_clima_simples = 0 10 20 30 40 50 75 100 125 150 175 200 225 250 275
+
+# ==========================================================
+# REGIOES (recortes de mapa: lon em 0-360)
+# ==========================================================
+
+[AMS]
+min_lat = -35
+max_lat = 10
+min_lon = 280
+max_lon = 330
+
+[BRASIL]
+min_lat = -33
+max_lat = 5
+min_lon = 285
+max_lon = 325
+
+[SAARA]
+min_lat = 10
+max_lat = 30
+min_lon = 340
+max_lon = 360
+
+# Bacia do rio Madeira / area de interesse SAE.
+# CORRIGIDO em 2026-11-16: o servidor de producao traz min_lat = -8 e
+# max_lat = -21, invertido em relacao a todas as outras secoes. Aqui os
+# valores seguem a convencao das demais secoes (min < max).
+#
+# ATENCAO -- a PRODUCAO NAO foi alterada: o cpc.config de
+# ~/PRODUCAO/CPC/OPERA/ no servidor continua com -8 / -21. E uma
+# divergencia intencional entre repositorio e producao, registrada em
+# _producao/DIVERGENCIAS.md. Antes de levar este config ao servidor,
+# conferir uma imagem do SAE: o recorte pode mudar.
+[SAE]
+min_lat = -21
+max_lat = -8
+min_lon = 285
+max_lon = 305
+
+# ==========================================================
+# ANOMALIA (usadas por PLOTAGEM/cpc_plota_anomalia.py)
+# origem: ~/PRODUCAO/CPC/SAE/cpc.config no servidor
+# ==========================================================
+
+[ANOMALIA_PER]
+valores = -100 -90 -75 -50 -25 -10 0 10 25 50 75 90 100
+
+[ANOMALIA]
+cores = 0 10 20 30 40 50 60 80 90 100 120 150 180 200 225 250 280 300 320 350 400

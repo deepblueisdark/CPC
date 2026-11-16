@@ -18,16 +18,39 @@ observada a partir dos dados **CPC Unified Gauge-Based Analysis
 > acumuladoras, shapefiles, mapas gerados e logs tambem sao dado
 > operacional e ficam la. `OPERA/` e `SAIDAS/` existem vazias
 > apenas como pontos de montagem da execucao local.
+>
+> **Este repositorio e publico e nao carrega identidade de ambiente.**
+> Servidor, usuario e caminhos de maquina ficam em `cpc.local` e
+> `cpc.config`, os dois barrados pelo `.gitignore`. O que esta
+> rastreado sao os modelos: `cpc.local.example` e `cpc.config.example`.
+
+## Primeiros passos
+
+Depois de clonar, crie os dois arquivos de ambiente a partir dos
+modelos:
+
+```bash
+cp cpc.config.example cpc.config    # ajuste repositorio e shapefile_dir
+cp cpc.local.example  cpc.local     # servidor e caminhos dos shapes
+```
+
+O `cpc.config` nao e opcional: os scripts localizam a raiz do projeto
+procurando justamente esse arquivo, na pasta do script e nas pastas
+acima. Sem ele, cada script cai no diretorio corrente.
+
+O `cpc.local` so e necessario para o que fala com o servidor
+(`sincroniza_opera.sh`, `coleta_servidor.sh`) e para `rodar_cpc.sh` e
+`roda_SAE_opera.sh`, que precisam dos caminhos dos shapes. Esses
+scripts param com mensagem clara se faltar alguma variavel.
 
 ## Como o sistema roda em producao
 
-No servidor, o cron dispara uma rotina unica todo dia as 09:00:
+No servidor, o cron dispara uma rotina unica, uma vez por dia, a
+partir do diretorio de trabalho da producao. O caminho, o horario e o
+endereco do servidor ficam **fora deste repositorio**, que e publico:
+vivem no `cpc.local` de cada maquina (modelo em `cpc.local.example`).
 
-```
-<agendamento> /home/<usuario>/PRODUCAO/CPC/OPERA/rodar_cpc.sh >> .../cron.log 2>&1
-```
-
-Ela percorre, em ordem, com janela dos **ultimos 90 dias**:
+A rotina percorre, em ordem, com janela dos **ultimos 90 dias**:
 
 ```
 cpc_download.py          baixa/atualiza os NetCDF do CPC/NOAA
@@ -49,7 +72,8 @@ O equivalente local e `scripts/rodar_cpc.sh`.
 
 ```
 CPC/
-├── cpc.config               Configuracao unica (caminhos, regioes, escalas)
+├── cpc.config.example       Modelo da configuracao (regioes, escalas)
+├── cpc.local.example        Modelo da identidade do ambiente
 ├── OPERACIONAL/             Aquisicao e calculo por bacia
 │   ├── cpc_download.py          Baixa e recorta os NetCDF do CPC/NOAA
 │   └── cpc_calcbacia.py         Estatisticas por bacia + mapas diarios
@@ -67,9 +91,13 @@ CPC/
 │   └── sincroniza_opera.sh      Captura o OPERA/ do servidor (roda no WSL)
 ├── OPERA/                   Diretorio de trabalho, vazio no git
 ├── SAIDAS/                  Mapas e NetCDF gerados, vazio no git
-├── _producao/               Snapshot versionado do OPERA/ do servidor
-└── _legado/                 Versoes antigas e copias verbatim do servidor
+└── _legado/                 Versoes antigas dos scripts de plotagem
 ```
+
+Fora do git, criados na maquina: `cpc.config`, `cpc.local`,
+`_producao/` (espelho da producao) e `_legado/servidor/` (copias
+verbatim do servidor). Os dois ultimos carregam caminhos reais da
+producao e por isso nao sao rastreados.
 
 ### Por que `OPERA/` e um diretorio plano
 
@@ -111,7 +139,7 @@ python OPERACIONAL/cpc_calcbacia.py 01/09/2026 16/11/2026 --saida chuva_diaria_C
 existirem. Ele confere isso antes de comecar e para com mensagem clara
 se nao as achar; aponte `EMPRESAS=<diretorio>` para onde elas estao.
 
-## Configuracao (`cpc.config`)
+## Configuracao (`cpc.config`, a partir do `.example`)
 
 | Chave | Para que serve |
 |---|---|
@@ -146,24 +174,29 @@ ser providenciados:
 | Shapefiles SIN | `/home/<usuario>/STUFF/SHAPES/SIN/` | variavel `SHAPEDIR_SIN` |
 | Shapefiles NFE | `/home/<usuario>/STUFF/SHAPES/NFE/` | variavel `SHAPEDIR_NFE` |
 | NetCDF do CPC/NOAA | `repositorio` no `cpc.config` | baixados por `cpc_download.py` |
+| `cpc.config` e `cpc.local` | criados a partir dos `.example` | ver "Primeiros passos" |
 
 ## Sincronizacao com a producao
 
-O servidor continua rodando de `~/PRODUCAO/CPC/OPERA/`, fora do git, e
-assim fica. Para que o codigo que roda de fato tenha historico, o
-repositorio guarda um snapshot dele em `_producao/OPERA/`:
+O servidor continua rodando do seu proprio diretorio de trabalho, fora
+do git, e assim fica. Para acompanhar o que roda de fato, o
+`sincroniza_opera.sh` traz uma copia dele para `_producao/`:
 
 ```bash
 # no WSL da maquina de desenvolvimento, nao no servidor
 bash scripts/sincroniza_opera.sh
 ```
 
-A sincronizacao tem **um sentido so** — servidor para repositorio. O
-script apenas le do servidor (`ssh` + `tar`), nunca escreve la. Ao
-terminar, ele mostra o que mudou na producao desde o ultimo snapshot
-commitado. As diferencas intencionais entre as duas copias estao em
-`_producao/DIVERGENCIAS.md`; o que aparecer fora daquela lista e drift
-de verdade.
+A sincronizacao tem **um sentido so** — servidor para a maquina local.
+O script apenas le do servidor (`ssh` + `tar`), nunca escreve la, e
+exclui as rotinas especificas de empresa.
+
+**`_producao/` nao e rastreado**, porque carrega a config real da
+producao e este repositorio e publico. A deteccao de drift nao depende
+do git: o script compara o manifesto novo com o anterior, guardado ao
+lado em `_producao/MANIFESTO_ANTERIOR.txt`, e lista o que foi alterado,
+o que e novo e o que sumiu. As diferencas intencionais entre as duas
+copias ficam em `_producao/DIVERGENCIAS.md`, tambem local.
 
 ## Pendencias abertas
 

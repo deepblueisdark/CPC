@@ -50,3 +50,23 @@ SHAPES/
 desktop.ini
 Thumbs.db
 *.lnk
+
+# ==========================================================
+# Identidade do ambiente e espelho da producao
+# ==========================================================
+# Este repositorio e PUBLICO. Nada que diga onde a producao roda —
+# servidor, usuario, hostname, layout de diretorios — entra aqui.
+#
+# cpc.local guarda esses valores e fica so na maquina. O modelo
+# rastreado e cpc.local.example.
+cpc.local
+
+# _producao/ e o espelho verbatim do OPERA/ do servidor, e
+# _legado/servidor/ sao copias verbatim de lá: os dois carregam
+# caminhos e configs reais da producao. Vivem locais, fora do git.
+_producao/
+_legado/servidor/
+
+# cpc.config carrega caminhos desta maquina; o modelo rastreado e
+# cpc.config.example. Ver a nota sobre identidade do ambiente acima.
+cpc.config

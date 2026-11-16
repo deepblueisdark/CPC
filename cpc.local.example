@@ -1,0 +1,29 @@
+# ==========================================================
+# cpc.local.example — modelo da identidade do ambiente
+#
+# Copie para cpc.local e preencha:
+#
+#     cp cpc.local.example cpc.local
+#
+# cpc.local e barrado pelo .gitignore de proposito: este repositorio
+# e publico e nao carrega onde a producao roda. Sem o arquivo, os
+# scripts que falam com o servidor param com mensagem clara.
+#
+# A forma ${VAR:=valor} so define se a variavel ainda nao existir,
+# de modo que um valor passado pelo ambiente tem precedencia:
+#
+#     SERVIDOR=outro@host bash scripts/sincroniza_opera.sh
+# ==========================================================
+
+# Servidor de producao, no formato usuario@host
+: "${SERVIDOR:=usuario@servidor.exemplo}"
+
+# Diretorio de trabalho da rotina diaria, no servidor
+: "${OPERA_REMOTO:=/caminho/no/servidor/CPC/OPERA}"
+
+# Shapefile das bacias SAE (usado por roda_SAE_opera.sh)
+: "${SHAPEFILE:=/caminho/dos/shapes/SAE/SAE_TODAS_AS_BACIAS_HICON_POLY.shp}"
+
+# Diretorios de shapes das rotinas SIN e NFE
+: "${SHAPEDIR_SIN:=/caminho/dos/shapes/SIN}"
+: "${SHAPEDIR_NFE:=/caminho/dos/shapes/NFE}"
